@@ -1,0 +1,6 @@
+fastapi
+pydantic
+pymupdf
+firebase-admin
+httpx
+uvicorn
