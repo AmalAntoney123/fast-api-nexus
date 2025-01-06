@@ -8,13 +8,11 @@
     ],
     "routes": [
         {
-            "src": "/api/(.*)",
-            "dest": "api/index.py"
-        },
-        {
             "src": "/(.*)",
             "dest": "api/index.py"
         }
     ],
-    "public": true
+    "files": [
+        "magazine-nexus-firebase-adminsdk-6c4rw-761f6d9b91.json"
+    ]
 } 
