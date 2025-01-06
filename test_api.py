@@ -11,6 +11,9 @@ def test_search_api(base_url, query, limit=10):
         limit (int): Maximum number of results to return
     """
     
+    # Remove any trailing slashes from the base_url
+    base_url = base_url.rstrip('/')
+    
     # Construct the URL
     url = f"{base_url}/api/search/{query}"
     params = {"limit": limit}
@@ -35,12 +38,13 @@ def test_search_api(base_url, query, limit=10):
             
     except requests.exceptions.RequestException as e:
         print(f"Error making request: {e}")
-        if hasattr(e.response, 'text'):
+        if hasattr(e, 'response') and e.response is not None:
+            print(f"Status code: {e.response.status_code}")
             print(f"Response text: {e.response.text}")
 
 if __name__ == "__main__":
-    # Replace with your actual Vercel deployment URL
-    BASE_URL = "https://fast-api-nexus-eum7r6fi7-amal-antoneys-projects.vercel.app/"
+    # Remove the trailing slash from the URL
+    BASE_URL = "https://fast-api-nexus-eum7r6fi7-amal-antoneys-projects.vercel.app"
     
     # Test cases
     test_search_api(BASE_URL, "technology", limit=5)

@@ -13,27 +13,32 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
-# Add CORS middleware with public access
+# Configure CORS to allow all origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # Allows all origins
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
 )
 
-# Initialize Firebase Admin with service account
-if 'FIREBASE_SERVICE_ACCOUNT' in os.environ:
-    # Production: Use environment variable
-    service_account_info = json.loads(os.environ['FIREBASE_SERVICE_ACCOUNT'])
-    cred = credentials.Certificate(service_account_info)
-else:
-    # Local development: Use file
-    cred = credentials.Certificate('magazine-nexus-firebase-adminsdk-6c4rw-761f6d9b91.json')
-
-firebase_admin.initialize_app(cred, {
-    'databaseURL': "https://magazine-nexus-default-rtdb.asia-southeast1.firebasedatabase.app"
-})
+try:
+    # Get Firebase credentials from environment variable
+    firebase_creds_json = os.getenv('FIREBASE_SERVICE_ACCOUNT')
+    if not firebase_creds_json:
+        raise ValueError("FIREBASE_SERVICE_ACCOUNT environment variable not found")
+    
+    # Parse the JSON string to dict
+    cred_dict = json.loads(firebase_creds_json)
+    
+    # Initialize Firebase with the credentials
+    cred = credentials.Certificate(cred_dict)
+    firebase_app = initialize_app(cred)
+    print("Firebase initialized successfully")
+    
+except Exception as e:
+    print(f"Firebase initialization error: {str(e)}")
+    raise
 
 # Add Appwrite configuration
 APPWRITE_ENDPOINT = "https://cloud.appwrite.io/v1"
