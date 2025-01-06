@@ -22,23 +22,27 @@ app.add_middleware(
     allow_headers=["*"],  # Allows all headers
 )
 
-try:
-    # Get Firebase credentials from environment variable
-    firebase_creds_json = os.getenv('FIREBASE_SERVICE_ACCOUNT')
-    if not firebase_creds_json:
-        raise ValueError("FIREBASE_SERVICE_ACCOUNT environment variable not found")
-    
-    # Parse the JSON string to dict
-    cred_dict = json.loads(firebase_creds_json)
-    
-    # Initialize Firebase with the credentials
-    cred = credentials.Certificate(cred_dict)
-    firebase_app = initialize_app(cred)
-    print("Firebase initialized successfully")
-    
-except Exception as e:
-    print(f"Firebase initialization error: {str(e)}")
-    raise
+# Initialize Firebase only if it hasn't been initialized yet
+if not firebase_admin._apps:
+    try:
+        # Get Firebase credentials from environment variable
+        firebase_creds_json = os.getenv('FIREBASE_SERVICE_ACCOUNT')
+        if not firebase_creds_json:
+            raise ValueError("FIREBASE_SERVICE_ACCOUNT environment variable not found")
+        
+        # Parse the JSON string to dict
+        cred_dict = json.loads(firebase_creds_json)
+        
+        # Initialize Firebase with the credentials and database URL
+        cred = credentials.Certificate(cred_dict)
+        firebase_admin.initialize_app(cred, {
+            'databaseURL': 'https://magazine-nexus-default-rtdb.asia-southeast1.firebasedatabase.app'
+        })
+        print("Firebase initialized successfully")
+        
+    except Exception as e:
+        print(f"Firebase initialization error: {str(e)}")
+        raise
 
 # Add Appwrite configuration
 APPWRITE_ENDPOINT = "https://cloud.appwrite.io/v1"
