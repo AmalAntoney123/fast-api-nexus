@@ -11,8 +11,5 @@
             "src": "/(.*)",
             "dest": "api/index.py"
         }
-    ],
-    "files": [
-        "magazine-nexus-firebase-adminsdk-6c4rw-761f6d9b91.json"
     ]
 } 
