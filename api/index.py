@@ -13,13 +13,13 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
-# Add CORS middleware
+# Add CORS middleware with public access
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allows all origins
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["*"],  # Allows all methods
-    allow_headers=["*"],  # Allows all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Initialize Firebase Admin with service account
@@ -66,11 +66,7 @@ class SearchResponse(BaseModel):
 
 @app.get("/")
 async def root():
-    try:
-        return {"message": "Magazine Nexus API is running"}
-    except Exception as e:
-        print(f"Error in root route: {str(e)}")  # This will show in Vercel logs
-        raise HTTPException(status_code=500, detail=str(e))
+    return {"message": "Magazine Nexus API is running"}
 
 @app.get("/api/search/{query}", response_model=SearchResponse)
 async def search_magazines(query: str, limit: Optional[int] = 10):
