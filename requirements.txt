@@ -6,3 +6,4 @@ httpx
 uvicorn
 PyPDF2
 appwrite
+python-dotenv
