@@ -8,12 +8,20 @@ from appwrite.services.storage import Storage
 import requests
 import PyPDF2
 from pydantic import BaseModel
+import json
 
 # Initialize FastAPI
 app = FastAPI()
 
 # Initialize Firebase Admin
-cred = credentials.Certificate("magazine-nexus-firebase-adminsdk-6c4rw-a88283a8f9.json")
+if os.getenv('FIREBASE_CREDENTIALS'):
+    # Use credentials from environment variable
+    cred_dict = json.loads(os.getenv('FIREBASE_CREDENTIALS'))
+    cred = credentials.Certificate(cred_dict)
+else:
+    # Fallback for local development
+    cred = credentials.Certificate("magazine-nexus-firebase-adminsdk-6c4rw-a88283a8f9.json")
+
 firebase_admin.initialize_app(cred, {
     'databaseURL': 'https://magazine-nexus-default-rtdb.asia-southeast1.firebasedatabase.app'
 })
