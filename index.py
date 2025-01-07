@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from typing import List, Dict, Optional
 import os
+from dotenv import load_dotenv
 import firebase_admin
 from firebase_admin import credentials, db
 from appwrite.client import Client
@@ -9,45 +10,59 @@ import requests
 import PyPDF2
 from pydantic import BaseModel
 import json
-from dotenv import load_dotenv
 
-load_dotenv()  # Load .env file
+# Load environment variables from .env file
+load_dotenv()
 
-# Add debug logging
-print("Environment variables check:")
-print(f"FIREBASE_CREDENTIALS exists: {bool(os.getenv('FIREBASE_CREDENTIALS'))}")
-print(f"APPWRITE_ENDPOINT exists: {bool(os.getenv('APPWRITE_ENDPOINT'))}")
-print(f"APPWRITE_PROJECT_ID exists: {bool(os.getenv('APPWRITE_PROJECT_ID'))}")
+# Debug: Print all environment variables
+print("Available environment variables:", [key for key in os.environ.keys()])
 
 # Initialize FastAPI
 app = FastAPI()
 
-# Initialize Firebase Admin
-try:
-    if os.getenv('FIREBASE_CREDENTIALS'):
-        print("Using environment credentials")  # Debug log
-        cred_dict = json.loads(os.getenv('FIREBASE_CREDENTIALS'))
-        print(f"Loaded credential dict keys: {cred_dict.keys()}")  # Debug log
-        # Check if private_key needs to be fixed
-        if 'private_key' in cred_dict:
-            cred_dict['private_key'] = cred_dict['private_key'].replace('\\n', '\n')
-        cred = credentials.Certificate(cred_dict)
-    else:
-        print("Using local credentials file - NO ENVIRONMENT VARIABLES FOUND")  # Debug log
-        cred = credentials.Certificate("magazine-nexus-firebase-adminsdk-6c4rw-a88283a8f9.json")
+# Initialize Firebase Admin with better error handling
+private_key = os.environ.get("FIREBASE_PRIVATE_KEY")
+if private_key:
+    # Remove any quotes and properly handle newlines
+    private_key = private_key.strip('"').strip("'").replace('\\n', '\n')
 
-    firebase_admin.initialize_app(cred, {
-        'databaseURL': 'https://magazine-nexus-default-rtdb.asia-southeast1.firebasedatabase.app'
-    })
-except Exception as e:
-    print(f"Firebase initialization error: {str(e)}")  # Debug log
+cred_dict = {
+    "type": "service_account",
+    "project_id": os.environ.get("FIREBASE_PROJECT_ID"),
+    "private_key_id": os.environ.get("FIREBASE_PRIVATE_KEY_ID"),
+    "private_key": private_key,
+    "client_email": os.environ.get("FIREBASE_CLIENT_EMAIL"),
+    "client_id": os.environ.get("FIREBASE_CLIENT_ID"),
+    "auth_uri": os.environ.get("FIREBASE_AUTH_URI", "https://accounts.google.com/o/oauth2/auth"),
+    "token_uri": os.environ.get("FIREBASE_TOKEN_URI", "https://oauth2.googleapis.com/token"),
+    "auth_provider_x509_cert_url": os.environ.get("FIREBASE_AUTH_PROVIDER_CERT_URL", "https://www.googleapis.com/oauth2/v1/certs"),
+    "client_x509_cert_url": os.environ.get("FIREBASE_CLIENT_CERT_URL")
+}
+
+# Debug: Print the actual private key format
+print("Private key format check:")
+print("First line:", private_key.split("\n")[0] if private_key else "No private key found")
+print("Number of lines:", len(private_key.split("\n")) if private_key else 0)
+
+if not private_key:
+    raise ValueError("FIREBASE_PRIVATE_KEY environment variable is not set!")
+
+try:
+    cred = credentials.Certificate(cred_dict)
+except ValueError as e:
+    print("Error initializing Firebase credentials:", str(e))
+    print("Private key starts with:", private_key[:50] if private_key else "None")
     raise
 
-# Initialize Appwrite with environment variables
+firebase_admin.initialize_app(cred, {
+    'databaseURL': os.environ.get('FIREBASE_DATABASE_URL', 'https://magazine-nexus-default-rtdb.asia-southeast1.firebasedatabase.app')
+})
+
+# Initialize Appwrite
 client = Client()
-client.set_endpoint(os.getenv('APPWRITE_ENDPOINT', 'https://cloud.appwrite.io/v1'))
-client.set_project(os.getenv('APPWRITE_PROJECT_ID', '676fc20b003ccf154826'))
-client.set_key(os.getenv('APPWRITE_API_KEY', 'standard_9dda74e82e65484c8a2a3140109bdfca83795e99028d68491edf78d6b19a10e008e35df1926856d3419bdda3c6fd56379805d352656cc3595a9e02219c991d00efdcb5dc5b9ca68f2093e3cc5e3474140df7eaa3a86a6b77acb6a510ad2d4972f8a266b7e1faa9beca33500fdf2367ce3db72463f795aa9ba9164a6737cd5f8f'))
+client.set_endpoint('https://cloud.appwrite.io/v1')
+client.set_project('676fc20b003ccf154826')
+client.set_key('standard_9dda74e82e65484c8a2a3140109bdfca83795e99028d68491edf78d6b19a10e008e35df1926856d3419bdda3c6fd56379805d352656cc3595a9e02219c991d00efdcb5dc5b9ca68f2093e3cc5e3474140df7eaa3a86a6b77acb6a510ad2d4972f8a266b7e1faa9beca33500fdf2367ce3db72463f795aa9ba9164a6737cd5f8f')
 storage = Storage(client)
 
 class SearchResult(BaseModel):
