@@ -14,54 +14,22 @@ import json
 # Load environment variables from .env file
 load_dotenv()
 
-# Debug: Print all environment variables
-print("Available environment variables:", [key for key in os.environ.keys()])
+# Check if the environment variable exists
+if not os.getenv('FIREBASE_ADMIN_CONFIG'):
+    raise ValueError("FIREBASE_ADMIN_CONFIG environment variable is not set")
 
 # Initialize FastAPI
 app = FastAPI()
 
-# Initialize Firebase Admin with better error handling
-private_key = os.environ.get("FIREBASE_PRIVATE_KEY")
-if private_key:
-    # Check if the key is already properly formatted (has actual newlines)
-    if "-----BEGIN PRIVATE KEY-----\n" in private_key:
-        # Key is already properly formatted, use as is
-        pass
-    else:
-        # Key needs newline conversion
-        private_key = private_key.replace('\\n', '\n')
+# Parse the JSON string from environment variable
+firebase_config = json.loads(os.getenv('FIREBASE_ADMIN_CONFIG'))
 
-cred_dict = {
-    "type": "service_account",
-    "project_id": os.environ.get("FIREBASE_PROJECT_ID"),
-    "private_key_id": os.environ.get("FIREBASE_PRIVATE_KEY_ID"),
-    "private_key": private_key,
-    "client_email": os.environ.get("FIREBASE_CLIENT_EMAIL"),
-    "client_id": os.environ.get("FIREBASE_CLIENT_ID"),
-    "auth_uri": os.environ.get("FIREBASE_AUTH_URI", "https://accounts.google.com/o/oauth2/auth"),
-    "token_uri": os.environ.get("FIREBASE_TOKEN_URI", "https://oauth2.googleapis.com/token"),
-    "auth_provider_x509_cert_url": os.environ.get("FIREBASE_AUTH_PROVIDER_CERT_URL", "https://www.googleapis.com/oauth2/v1/certs"),
-    "client_x509_cert_url": os.environ.get("FIREBASE_CLIENT_CERT_URL")
-}
-
-# Debug: Print the actual private key format
-print("Private key format check:")
-print("First line:", private_key.split("\n")[0] if private_key else "No private key found")
-print("Number of lines:", len(private_key.split("\n")) if private_key else 0)
-
-if not private_key:
-    raise ValueError("FIREBASE_PRIVATE_KEY environment variable is not set!")
-
-try:
-    cred = credentials.Certificate(cred_dict)
-except ValueError as e:
-    print("Error initializing Firebase credentials:", str(e))
-    print("Private key starts with:", private_key[:50] if private_key else "None")
-    raise
-
-firebase_admin.initialize_app(cred, {
-    'databaseURL': os.environ.get('FIREBASE_DATABASE_URL', 'https://magazine-nexus-default-rtdb.asia-southeast1.firebasedatabase.app')
-})
+# Initialize Firebase if not already initialized
+if not len(firebase_admin._apps):
+    cred = credentials.Certificate(firebase_config)
+    firebase_admin.initialize_app(cred, {
+        'databaseURL': 'https://magazine-nexus-default-rtdb.asia-southeast1.firebasedatabase.app'
+    })
 
 # Initialize Appwrite
 client = Client()
