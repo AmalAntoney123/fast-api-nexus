@@ -4,3 +4,5 @@ pymupdf
 firebase-admin
 httpx
 uvicorn
+PyPDF2
+appwrite
