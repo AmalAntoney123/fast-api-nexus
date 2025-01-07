@@ -9,28 +9,45 @@ import requests
 import PyPDF2
 from pydantic import BaseModel
 import json
+from dotenv import load_dotenv
+
+load_dotenv()  # Load .env file
+
+# Add debug logging
+print("Environment variables check:")
+print(f"FIREBASE_CREDENTIALS exists: {bool(os.getenv('FIREBASE_CREDENTIALS'))}")
+print(f"APPWRITE_ENDPOINT exists: {bool(os.getenv('APPWRITE_ENDPOINT'))}")
+print(f"APPWRITE_PROJECT_ID exists: {bool(os.getenv('APPWRITE_PROJECT_ID'))}")
 
 # Initialize FastAPI
 app = FastAPI()
 
 # Initialize Firebase Admin
-if os.getenv('FIREBASE_CREDENTIALS'):
-    # Use credentials from environment variable
-    cred_dict = json.loads(os.getenv('FIREBASE_CREDENTIALS'))
-    cred = credentials.Certificate(cred_dict)
-else:
-    # Fallback for local development
-    cred = credentials.Certificate("magazine-nexus-firebase-adminsdk-6c4rw-a88283a8f9.json")
+try:
+    if os.getenv('FIREBASE_CREDENTIALS'):
+        print("Using environment credentials")  # Debug log
+        cred_dict = json.loads(os.getenv('FIREBASE_CREDENTIALS'))
+        print(f"Loaded credential dict keys: {cred_dict.keys()}")  # Debug log
+        # Check if private_key needs to be fixed
+        if 'private_key' in cred_dict:
+            cred_dict['private_key'] = cred_dict['private_key'].replace('\\n', '\n')
+        cred = credentials.Certificate(cred_dict)
+    else:
+        print("Using local credentials file - NO ENVIRONMENT VARIABLES FOUND")  # Debug log
+        cred = credentials.Certificate("magazine-nexus-firebase-adminsdk-6c4rw-a88283a8f9.json")
 
-firebase_admin.initialize_app(cred, {
-    'databaseURL': 'https://magazine-nexus-default-rtdb.asia-southeast1.firebasedatabase.app'
-})
+    firebase_admin.initialize_app(cred, {
+        'databaseURL': 'https://magazine-nexus-default-rtdb.asia-southeast1.firebasedatabase.app'
+    })
+except Exception as e:
+    print(f"Firebase initialization error: {str(e)}")  # Debug log
+    raise
 
-# Initialize Appwrite
+# Initialize Appwrite with environment variables
 client = Client()
-client.set_endpoint('https://cloud.appwrite.io/v1')
-client.set_project('676fc20b003ccf154826')
-client.set_key('standard_9dda74e82e65484c8a2a3140109bdfca83795e99028d68491edf78d6b19a10e008e35df1926856d3419bdda3c6fd56379805d352656cc3595a9e02219c991d00efdcb5dc5b9ca68f2093e3cc5e3474140df7eaa3a86a6b77acb6a510ad2d4972f8a266b7e1faa9beca33500fdf2367ce3db72463f795aa9ba9164a6737cd5f8f')
+client.set_endpoint(os.getenv('APPWRITE_ENDPOINT', 'https://cloud.appwrite.io/v1'))
+client.set_project(os.getenv('APPWRITE_PROJECT_ID', '676fc20b003ccf154826'))
+client.set_key(os.getenv('APPWRITE_API_KEY', 'standard_9dda74e82e65484c8a2a3140109bdfca83795e99028d68491edf78d6b19a10e008e35df1926856d3419bdda3c6fd56379805d352656cc3595a9e02219c991d00efdcb5dc5b9ca68f2093e3cc5e3474140df7eaa3a86a6b77acb6a510ad2d4972f8a266b7e1faa9beca33500fdf2367ce3db72463f795aa9ba9164a6737cd5f8f'))
 storage = Storage(client)
 
 class SearchResult(BaseModel):
