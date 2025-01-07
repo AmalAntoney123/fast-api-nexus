@@ -23,8 +23,13 @@ app = FastAPI()
 # Initialize Firebase Admin with better error handling
 private_key = os.environ.get("FIREBASE_PRIVATE_KEY")
 if private_key:
-    # Remove any quotes and properly handle newlines
-    private_key = private_key.strip('"').strip("'").replace('\\n', '\n')
+    # Check if the key is already properly formatted (has actual newlines)
+    if "-----BEGIN PRIVATE KEY-----\n" in private_key:
+        # Key is already properly formatted, use as is
+        pass
+    else:
+        # Key needs newline conversion
+        private_key = private_key.replace('\\n', '\n')
 
 cred_dict = {
     "type": "service_account",
